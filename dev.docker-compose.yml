@@ -1,0 +1,10 @@
+services:
+  postgresql:
+    image: postgres:alpine3.22
+    container_name: cryptoprice_postgresql
+    restart: always
+    env_file:
+      - ./.env
+    expose:
+      - "5432"
+    network_mode: host

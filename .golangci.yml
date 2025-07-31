@@ -1,0 +1,107 @@
+version: "2"
+
+run:
+  tests: false
+
+linters:
+  default: none
+  enable:
+    - asciicheck
+    - bodyclose
+    - copyloopvar
+    - cyclop
+    - dogsled
+    - dupl
+    - errcheck
+    - errorlint
+    - funlen
+    - ginkgolinter
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - godox
+    - goprintffuncname
+    - gosec
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - mnd
+    - nakedret
+    - nestif
+    - noctx
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+    - unused
+    - varnamelen
+    - whitespace
+
+  settings:
+    cyclop:
+      max-complexity: 10
+    errorlint:
+      comparison: true
+    goconst:
+      ignore-string-values: .*?%s|%v|%w.*
+      numbers: true
+      ignore-calls: false
+    gocritic:
+      enable-all: true
+    gocyclo:
+      min-complexity: 10
+    lll:
+      line-length: 99
+    nestif:
+      min-complexity: 3
+    prealloc:
+      simple: false
+      for-loops: true
+    whitespace:
+      multi-func: true
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - docs
+      - build
+      - migrations
+    rules:
+      - linters: # more readable
+          - goconst
+        path: cmd/migrator/commands/
+        text: "string `Successfully!` has 3 occurrences, make it a constant"
+      - linters: # more readable
+          - goconst
+        path: internal/app/controller/http/v1/register\.go
+        text: "string `.*?` has 3 occurrences, make it a constant"
+      - linters: # more readable
+          - goconst
+        path: internal/app/repo/pg/subs_repo\.go
+      - linters: # struct tags
+          - lll
+        path: internal/app/controller/http/v1/data_in\.go
+        text: "The line is 1[0-9][0-9] characters long, which exceeds the maximum of 99 characters"
+      - linters: # swagger docs desc
+          - lll
+        path: internal/app/controller/http/v1/controller\.go
+        text: "The line is 1[0-9][0-9] characters long, which exceeds the maximum of 99 characters"
+
+issues:
+  fix: false
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - docs
