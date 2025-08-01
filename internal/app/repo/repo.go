@@ -2,16 +2,22 @@
 // its implementations in subdirs.
 package repo
 
-import "CryptocoinPrice/internal/app/entity"
+import (
+	"errors"
 
-type CoinRepo interface {
+	"CryptocoinPrice/internal/app/entity"
+)
+
+var ErrNotFound = errors.New("record not found") // record not found error
+
+type CoinRepoDB interface {
 	Create(symbol string) (*entity.Coin, error)
 	GetBySymbol(symbol string) (*entity.Coin, error)
 	Update(coinID string, coinUpdates *entity.CoinPartial) error
 	GetObserved() (entity.CoinList, error)
 }
 
-type PriceRepo interface {
-	Create(coin *entity.Coin, price float64, timestamp int) (*entity.Price, error)
-	GetNearestTimestamp(coin *entity.Coin, timestamp int) (*entity.Price, error)
+type PriceRepoDB interface {
+	Create(coin *entity.Coin, price float64, timestamp int64) (*entity.Price, error)
+	GetNearestTimestamp(coin *entity.Coin, timestamp int64) (*entity.Price, error)
 }

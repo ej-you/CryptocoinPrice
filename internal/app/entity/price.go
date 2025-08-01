@@ -9,7 +9,7 @@ type Price struct {
 	// coin price
 	Price string `gorm:"price;not null"`
 	// created at timestamp
-	Timestamp int `gorm:"timestamp;not null"`
+	Timestamp int64 `gorm:"timestamp;not null"`
 
 	// coin instance
 	Coin *Coin `gorm:"foreignKey:CoinID;->"`

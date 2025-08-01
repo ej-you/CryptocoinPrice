@@ -10,12 +10,9 @@ import (
 
 	"CryptocoinPrice/internal/app/entity"
 	"CryptocoinPrice/internal/app/repo"
-	// "CryptocoinPrice/internal/app/errors"
 )
 
-var _ repo.CoinRepo = (*CoinRepoPG)(nil)
-
-var ErrNotFound = gorm.ErrRecordNotFound // record not found error
+var _ repo.CoinRepoDB = (*CoinRepoPG)(nil)
 
 type CoinRepoPG struct {
 	dbStorage *gorm.DB
@@ -51,7 +48,7 @@ func (r *CoinRepoPG) GetBySymbol(symbol string) (*entity.Coin, error) {
 	err := r.dbStorage.Where(coin).First(coin).Error
 	// if record not found
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, ErrNotFound
+		return nil, repo.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
