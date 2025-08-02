@@ -3,7 +3,6 @@ package pg
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -25,7 +24,7 @@ func NewCoinRepoPG(dbStorage *gorm.DB) *CoinRepoPG {
 	}
 }
 
-// Create creates new coin.
+// Create creates new coin. It is observed by default.
 func (r *CoinRepoPG) Create(symbol string) (*entity.Coin, error) {
 	// init coin for creating
 	coin := &entity.Coin{
@@ -35,7 +34,7 @@ func (r *CoinRepoPG) Create(symbol string) (*entity.Coin, error) {
 	}
 	// create record
 	if err := r.dbStorage.Create(coin).Error; err != nil {
-		return nil, fmt.Errorf("create coin: %w", err)
+		return nil, err
 	}
 	return coin, nil
 }
@@ -46,7 +45,7 @@ func (r *CoinRepoPG) GetBySymbol(symbol string) (*entity.Coin, error) {
 	coin := &entity.Coin{Symbol: symbol}
 
 	err := r.dbStorage.Where(coin).First(coin).Error
-	// if record not found
+	// if record is not found
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, repo.ErrNotFound
 	}
@@ -64,9 +63,12 @@ func (r *CoinRepoPG) Update(coinID string, coinUpdates *entity.CoinPartial) erro
 	err := r.dbStorage.Model(&entity.Coin{}).
 		Where("id = ?", coinID).
 		Updates(coinUpdates).Error
-	// error
+	// if record is not found
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return repo.ErrNotFound
+	}
 	if err != nil {
-		return fmt.Errorf("update: %w", err)
+		return err
 	}
 	return nil
 }

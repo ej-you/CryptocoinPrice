@@ -73,11 +73,11 @@ linters:
       - docs
       - build
       - migrations
-    # rules:
-    #   - linters: # more readable
-    #       - goconst
-    #     path: cmd/migrator/commands/
-    #     text: "string `Successfully!` has 3 occurrences, make it a constant"
+    rules:
+      - linters: # more readable
+          - goconst
+        path: cmd/migrator/commands/
+        text: "string `Successfully!` has 3 occurrences, make it a constant"
     #   - linters: # more readable
     #       - goconst
     #     path: internal/app/controller/http/v1/register\.go

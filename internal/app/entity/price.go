@@ -15,6 +15,9 @@ type Price struct {
 	Coin *Coin `gorm:"foreignKey:CoinID;->"`
 }
 
+// PriceList is a slice of coins' prices.
+type PriceList []Price
+
 // CoinPriceAPI ia a coin prise parsed from API.
 type CoinPriceAPI struct {
 	// coin symbol
