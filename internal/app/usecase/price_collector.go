@@ -42,21 +42,26 @@ func (u *PriceCollectorUC) GetNewObservedCoinPrices() (entity.PriceList, error) 
 
 	// get coin prices
 	coinPrices, err := u.priceRepoAPI.ManyCoinPrices(coinSymbols)
-
 	updateTime := time.Now().UTC().Unix()
-	var coin entity.Coin
+
+	var coinIdx int
+	var coinSymbol string
+	var coinIdxFunc = func(coin entity.Coin) bool {
+		return coin.Symbol == coinSymbol
+	}
 	// fill price list
-	priceList := make(entity.PriceList, len(coinPrices))
-	for i, coinPrice := range coinPrices {
-		coin = observedCoins[slices.IndexFunc(observedCoins, func(coin entity.Coin) bool {
-			return coin.Symbol == coinPrice.Symbol
-		})]
-		priceList[i] = entity.Price{
-			Coin:      &coin,
+	priceList := make(entity.PriceList, 0, len(coinPrices))
+	for _, coinPrice := range coinPrices {
+		// get coin struct from observed coins list
+		coinSymbol = coinPrice.Symbol
+		coinIdx = slices.IndexFunc(observedCoins, coinIdxFunc)
+		// append price object
+		priceList = append(priceList, entity.Price{
+			Coin:      &observedCoins[coinIdx],
 			Price:     fmt.Sprint(coinPrice.Price),
 			Timestamp: updateTime,
-			CoinID:    coin.ID,
-		}
+			CoinID:    observedCoins[coinIdx].ID,
+		})
 	}
 	return priceList, err
 }
