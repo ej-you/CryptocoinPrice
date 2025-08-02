@@ -1,13 +1,14 @@
 package pg
 
 import (
-	"CryptocoinPrice/internal/app/entity"
-	"CryptocoinPrice/internal/app/repo"
 	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"CryptocoinPrice/internal/app/entity"
+	"CryptocoinPrice/internal/app/repo"
 )
 
 var _ repo.PriceRepoDB = (*PriceRepoPG)(nil)
@@ -16,7 +17,7 @@ type PriceRepoPG struct {
 	dbStorage *gorm.DB
 }
 
-// NewPriceRepoPG returns new PostgreSQL repo DB instance for coin entity.
+// NewPriceRepoPG returns new PostgreSQL repo DB instance for price entity.
 func NewPriceRepoPG(dbStorage *gorm.DB) *PriceRepoPG {
 	return &PriceRepoPG{
 		dbStorage: dbStorage,

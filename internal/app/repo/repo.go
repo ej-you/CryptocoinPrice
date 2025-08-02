@@ -8,7 +8,8 @@ import (
 	"CryptocoinPrice/internal/app/entity"
 )
 
-var ErrNotFound = errors.New("record not found") // record not found error
+var ErrNotFound = errors.New("record not found")  // record not found error
+var ErrValidateData = errors.New("validate data") // validat data error
 
 type CoinRepoDB interface {
 	Create(symbol string) (*entity.Coin, error)
@@ -20,4 +21,9 @@ type CoinRepoDB interface {
 type PriceRepoDB interface {
 	Create(coin *entity.Coin, price float64, timestamp int64) (*entity.Price, error)
 	GetNearestTimestamp(coin *entity.Coin, timestamp int64) (*entity.Price, error)
+}
+
+type PriceRepoAPI interface {
+	OneCoinPrice(symbol string) (*entity.CoinPriceAPI, error)
+	ManyCoinPrices(symbols []string) (entity.CoinPriceAPIList, error)
 }
