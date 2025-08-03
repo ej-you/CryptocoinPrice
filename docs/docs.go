@@ -157,13 +157,13 @@ const docTemplate = `{
                 "price": {
                     "description": "Coin price",
                     "type": "string",
-                    "example": "1736500490"
+                    "example": "114818"
                 },
                 "timestamp": {
                     "description": "Unix timestamp",
                     "type": "integer",
                     "minimum": 0,
-                    "example": 1736500490
+                    "example": 1754045773
                 }
             }
         }

@@ -2,10 +2,8 @@
 package server
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -20,26 +18,8 @@ import (
 
 // HTTP-server.
 type Server struct {
-	cfg     *config.Config
-	db      *gorm.DB
-	valid   validator.Validator
-	jsonify jsonify.Jsonify
-
+	cfg      *config.Config
 	fiberApp *fiber.App
-	err      chan error // server listen error
-}
-
-// New returns new server instance.
-func New(cfg *config.Config, db *gorm.DB,
-	valid validator.Validator, jsonifier jsonify.Jsonify) (*Server, error) {
-
-	return &Server{
-		cfg:     cfg,
-		db:      db,
-		valid:   valid,
-		jsonify: jsonifier,
-		err:     make(chan error),
-	}, nil
 }
 
 //	@title			Cryptocoin Price API
@@ -53,68 +33,58 @@ func New(cfg *config.Config, db *gorm.DB,
 //	@accept			json
 //	@produce		json
 //
-// Run starts server.
-func (s *Server) Run() {
-	// app init
-	s.fiberApp = fiber.New(fiber.Config{
-		JSONEncoder:   s.jsonify.Marshal,
-		JSONDecoder:   s.jsonify.Unmarshal,
-		ServerHeader:  "Cryptocoin Price API",
-		StrictRouting: false,
-	})
+// New returns new server instance.
+func New(cfg *config.Config, dbStorage *gorm.DB,
+	valid validator.Validator, jsonifier jsonify.Jsonify) (*Server, error) {
+
+	// fiber init
+	server := &Server{
+		cfg: cfg,
+		fiberApp: fiber.New(fiber.Config{
+			JSONEncoder:   jsonifier.Marshal,
+			JSONDecoder:   jsonifier.Unmarshal,
+			ServerHeader:  "Cryptocoin Price API",
+			StrictRouting: false,
+		}),
+	}
 
 	// set up base middlewares
-	httpLogger := middleware.Logger(s.cfg.App.LogLevel, s.cfg.App.LogFormat)
+	httpLogger := middleware.Logger(cfg.App.LogLevel, cfg.App.LogFormat)
 	if httpLogger != nil {
-		s.fiberApp.Use(httpLogger)
+		server.fiberApp.Use(httpLogger)
 	}
-	s.fiberApp.Use(middleware.Recover())
-	s.fiberApp.Use(middleware.Swagger())
+	server.fiberApp.Use(middleware.Recover())
+	server.fiberApp.Use(middleware.Swagger())
 	// register all endpoints
-	s.registerEndpointsV1()
+	server.registerEndpointsV1(cfg, dbStorage, valid)
 
-	// start app
-	go func() {
-		if err := s.fiberApp.Listen(":" + s.cfg.Server.Port); err != nil {
-			s.err <- fmt.Errorf("listen: %w", err)
-		}
-	}()
+	return server, nil
 }
 
-// WaitForShutdown waits for OS signal to gracefully shuts down server.
+// StartWithShutdown starts server and waits for
+// context is done for gracefully shutdown server.
 // This method is blocking.
-func (s *Server) WaitForShutdown() error {
-	// skip if server is not running
-	if s.fiberApp == nil {
-		return nil
-	}
+func (s *Server) StartWithShutdown(ctx context.Context) error {
+	logrus.Info("Start server")
+	defer logrus.Info("Server is shutdown")
 
-	// handle shutdown process signals
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-	)
-
-	shutdownDone := make(chan struct{})
-	// create gracefully shutdown task
-	var err error
+	errChan := make(chan error, 1)
+	defer close(errChan)
+	// start server
 	go func() {
-		defer close(shutdownDone)
-		select {
-		case err = <-s.err: // server listen error
-			return
-		case handledSignal := <-quit:
-			logrus.Infof("Got %s signal. Shutdown server", handledSignal.String())
-			// shutdown app
-			s.fiberApp.ShutdownWithTimeout(s.cfg.Server.ShutdownTimeout) // nolint:errcheck // cannot occurs
+		if err := s.fiberApp.Listen(":" + s.cfg.Server.Port); err != nil {
+			errChan <- fmt.Errorf("server: listen: %w", err)
 		}
 	}()
 
-	// wait for shutdown
-	<-shutdownDone
-	logrus.Info("Server shutdown successfully")
-	return err
+	// wait for context or server listen error
+	select {
+	case <-ctx.Done():
+		if err := s.fiberApp.ShutdownWithTimeout(s.cfg.App.ShutdownTimeout); err != nil {
+			return fmt.Errorf("server: shutdown: %w", err)
+		}
+		return nil
+	case err := <-errChan:
+		return err
+	}
 }

@@ -1,12 +1,18 @@
-// Package app provides function Run to start full application.
+// Package app provides struct with Run method to start full application.
 package app
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/sirupsen/logrus"
 
 	"CryptocoinPrice/config"
+	"CryptocoinPrice/internal/app/pricecollector"
 	"CryptocoinPrice/internal/app/server"
 	"CryptocoinPrice/internal/pkg/database"
 	"CryptocoinPrice/internal/pkg/jsonify"
@@ -14,48 +20,99 @@ import (
 	"CryptocoinPrice/internal/pkg/validator"
 )
 
-var _ HTTPServer = (*server.Server)(nil)
+var _ Service = (*pricecollector.PriceCollector)(nil)
 
-// HTTP-server interface.
-type HTTPServer interface {
-	Run()
-	WaitForShutdown() error
+// App service interface.
+type Service interface {
+	StartWithShutdown(ctx context.Context) error
 }
 
-// Run loads app config and starts HTTP-server and price collector.
-// This function is blocking.
-func Run() error {
-	// create config
+type App struct {
+	cfg      *config.Config
+	services []Service
+}
+
+// New returns new app instance.
+func New() (*App, error) {
+	// load config
 	cfg, err := config.New()
 	if err != nil {
-		return fmt.Errorf("create config: %w", err)
+		return nil, fmt.Errorf("create config: %w", err)
 	}
-
 	// setup logger
 	logger.InitLogrus(cfg.App.LogLevel, cfg.App.LogFormat)
+
 	// connect to DB
 	gormDB, err := database.New(cfg.DB.ConnString,
 		database.WithTranslateError(),
 		database.WithIgnoreNotFound(),
 		database.WithDisableColorful(),
 		database.WithLogLevel(cfg.App.LogLevel),
-		database.WithLogger(logrus.StandardLogger()),
-	)
+		database.WithLogger(logrus.StandardLogger()))
 	if err != nil {
-		return fmt.Errorf("db: %w", err)
+		return nil, fmt.Errorf("db: %w", err)
 	}
-	// create json (de)serializer
-	jsonifier := jsonify.New()
 
-	// create HTTP-server
-	srv, err := server.New(cfg, gormDB, validator.New(), jsonifier)
+	// init serv
+	srv, err := server.New(cfg, gormDB, validator.New(), jsonify.New())
 	if err != nil {
-		return fmt.Errorf("create server: %w", err)
+		return nil, fmt.Errorf("create server: %w", err)
 	}
-	// run HTTP-server and wait for HTTP-server shutdown
-	srv.Run()
-	if err := srv.WaitForShutdown(); err != nil {
-		return fmt.Errorf("http server: %w", err)
+	// init price collector
+	priceCollector := pricecollector.New(cfg, gormDB)
+
+	return &App{
+		cfg:      cfg,
+		services: []Service{srv, priceCollector},
+	}, nil
+}
+
+// Run starts HTTP-server service and price collector service.
+// This function is blocking. It waits for os signal to gracefully shutdown all services.
+func (a *App) Run() error {
+	var appErr error
+
+	// ctx for app
+	appContext, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// handle shutdown process signals
+	quitSig := make(chan os.Signal, 1)
+	signal.Notify(quitSig,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+
+	// start all services
+	var wg sync.WaitGroup // nolint:varnamelen // generally accepted name
+	serviceErr := make(chan error, 1)
+	for _, service := range a.services {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := service.StartWithShutdown(appContext); err != nil {
+				serviceErr <- err
+			}
+		}()
 	}
-	return nil
+
+	select {
+	case handledSignal := <-quitSig:
+		cancel()
+		logrus.Infof("Got %q signal. Shutdown services...", handledSignal.String())
+	case err := <-serviceErr:
+		cancel()
+		appErr = fmt.Errorf("service: %w", err)
+		logrus.Info("One of the services fell down. Shutdown other services...")
+	case <-appContext.Done():
+		appErr = appContext.Err()
+		logrus.Info("Context canceled. Shutdown app...")
+	}
+
+	// wait for all services
+	wg.Wait()
+	logrus.Info("All services was stopped. Shutdown app")
+	return appErr
 }

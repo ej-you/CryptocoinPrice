@@ -8,7 +8,11 @@ import (
 )
 
 func main() {
-	if err := app.Run(); err != nil {
+	application, err := app.New()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	if err := application.Run(); err != nil {
 		logrus.Fatal(err)
 	}
 }

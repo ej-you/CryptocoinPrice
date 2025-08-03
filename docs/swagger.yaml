@@ -21,11 +21,11 @@ definitions:
         type: string
       price:
         description: Coin price
-        example: "1736500490"
+        example: "114818"
         type: string
       timestamp:
         description: Unix timestamp
-        example: 1736500490
+        example: 1754045773
         minimum: 0
         type: integer
     required:

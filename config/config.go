@@ -18,14 +18,18 @@ type (
 	}
 
 	App struct {
-		LogLevel        string `env:"LOG_LEVEL" env-default:"info" env-description:"info/warn/error"`
-		LogFormat       string `env:"LOG_FORMAT" env-default:"text" env-description:"text/json"`
-		CoingeckoAPIKey string `env-required:"true" env:"COINGECKO_API_KEY"`
+		// info/warn/error
+		LogLevel string `env:"LOG_LEVEL" env-default:"info"`
+		// text/json
+		LogFormat string `env:"LOG_FORMAT" env-default:"text"`
+
+		CoingeckoAPIKey      string        `env-required:"true" env:"COINGECKO_API_KEY"`
+		PriceCollectInterval time.Duration `env:"PRICE_COLLECT_INTERVAL" env-default:"5s"`
+		ShutdownTimeout      time.Duration `env:"SHUTDOWN_TIMEOUT" env-default:"5s"`
 	}
 
 	Server struct {
-		Port            string        `env:"SERVER_PORT" env-default:"8000"`
-		ShutdownTimeout time.Duration `env:"SERVER_SHUTDOWN_TIMEOUT" env-default:"5s"`
+		Port string `env:"SERVER_PORT" env-default:"8000"`
 	}
 
 	DB struct {
