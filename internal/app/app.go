@@ -101,7 +101,7 @@ func (a *App) Run() error {
 	select {
 	case handledSignal := <-quitSig:
 		cancel()
-		logrus.Infof("Got %q signal. Shutdown services...", handledSignal.String())
+		logrus.Infof("Got %s signal. Shutdown services...", handledSignal.String())
 	case err := <-serviceErr:
 		cancel()
 		appErr = fmt.Errorf("service: %w", err)

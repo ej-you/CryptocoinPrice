@@ -60,6 +60,10 @@ func (p *PriceCollector) collect() {
 	if err != nil {
 		logrus.Errorf("Background collect prices: %v", err)
 	}
+	// skip if no one coin is observed
+	if len(newPrices) == 0 {
+		return
+	}
 	// save new prices
 	if _, err := p.priceCollectorUC.SaveCoinPrices(newPrices); err != nil {
 		logrus.Errorf("Background save collected prices: %v", err)

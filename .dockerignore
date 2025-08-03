@@ -1,0 +1,9 @@
+.env
+.golangci.yml
+
+build/
+Makefile
+README.md
+
+docker-compose.yml
+dev.docker-compose.yml

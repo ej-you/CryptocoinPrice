@@ -1,0 +1,35 @@
+services:
+  postgresql:
+    image: postgres:alpine3.22
+    container_name: cryptoprice_postgresql
+    restart: always
+    env_file:
+      - ./.env
+    expose:
+      - "5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data/pgdata:rw
+    networks:
+      main_network:
+
+  server:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile
+    container_name: cryptoprice_server
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      main_network:
+    depends_on:
+      - postgresql
+
+networks:
+  main_network:
+    driver: bridge
+
+volumes:
+  postgresql_data:
