@@ -110,10 +110,10 @@ func (u *CoinManageUC) GetNearestPrice(symbol string, timestamp int64) (*entity.
 	price, err := u.priceRepoDB.GetNearestTimestamp(coin, timestamp)
 	// if price is not found
 	if errors.Is(err, repo.ErrNotFound) {
-		return nil, fmt.Errorf("get nearest price: %w", ErrNotFound)
+		return nil, fmt.Errorf("price: %w", ErrNotFound)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("get nearest price: %w", err)
+		return nil, fmt.Errorf("price: %w", err)
 	}
 	return price, nil
 }

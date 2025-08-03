@@ -1,0 +1,168 @@
+{
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "HTTP API для сбора, хранения и отображения стоимости криптовалют.",
+        "title": "Cryptocoin Price API",
+        "contact": {},
+        "version": "1.0.0"
+    },
+    "host": "127.0.0.1:8000",
+    "basePath": "/api/v1",
+    "paths": {
+        "/currency/add": {
+            "post": {
+                "description": "Добавление криптовалюты в список наблюдения.",
+                "tags": [
+                    "currency"
+                ],
+                "summary": "Добавление криптовалюты в список наблюдения",
+                "operationId": "observe-coin",
+                "parameters": [
+                    {
+                        "description": "Название криптовалюты",
+                        "name": "Coin",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/coinmanage.coinObservedInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Успешное добавление в список наблюдения"
+                    },
+                    "400": {
+                        "description": "Невалидное тело запроса"
+                    },
+                    "404": {
+                        "description": "Криптовалюта с таким названием не существует"
+                    }
+                }
+            }
+        },
+        "/currency/price": {
+            "get": {
+                "description": "Получение цены криптовалюты.",
+                "tags": [
+                    "currency"
+                ],
+                "summary": "Получение цены криптовалюты",
+                "operationId": "get-coin-price",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Название криптовалюты и время",
+                        "name": "coin",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Время в UNIX-формате",
+                        "name": "timestamp",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/coinmanage.coinPriceOutput"
+                        }
+                    },
+                    "400": {
+                        "description": "Невалидное тело запроса"
+                    },
+                    "404": {
+                        "description": "Ни одна цена криптовалюты не найдена"
+                    }
+                }
+            }
+        },
+        "/currency/remove": {
+            "delete": {
+                "description": "Удаление криптовалюты из списка наблюдения.",
+                "tags": [
+                    "currency"
+                ],
+                "summary": "Удаление криптовалюты из списка наблюдения",
+                "operationId": "disable-observe-coin",
+                "parameters": [
+                    {
+                        "description": "Название криптовалюты",
+                        "name": "Coin",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/coinmanage.coinObservedInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Успешное добавление в список наблюдения"
+                    },
+                    "400": {
+                        "description": "Невалидное тело запроса"
+                    },
+                    "404": {
+                        "description": "Криптовалюта с таким названием не была добавлена в список наблюдения ранее"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "coinmanage.coinObservedInput": {
+            "description": "Input to add/remove coin to/from observed list..",
+            "type": "object",
+            "required": [
+                "coin"
+            ],
+            "properties": {
+                "coin": {
+                    "description": "Coin short name",
+                    "type": "string",
+                    "example": "btc"
+                }
+            }
+        },
+        "coinmanage.coinPriceOutput": {
+            "description": "Output for gotten coin price at timestamp.",
+            "type": "object",
+            "required": [
+                "coin",
+                "timestamp"
+            ],
+            "properties": {
+                "coin": {
+                    "description": "Coin short name",
+                    "type": "string",
+                    "example": "btc"
+                },
+                "price": {
+                    "description": "Coin price",
+                    "type": "string",
+                    "example": "1736500490"
+                },
+                "timestamp": {
+                    "description": "Unix timestamp",
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 1736500490
+                }
+            }
+        }
+    }
+}
